@@ -2,14 +2,16 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaGoogle, FaFacebookF } from "react-icons/fa";
+import { FaGoogle } from "react-icons/fa";
 import Link from "next/link";
+import { LuStore } from "react-icons/lu";
 import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth, provider } from "../Firebase/config";
 import { toast } from "react-toastify";
@@ -32,7 +34,6 @@ const Login = () => {
       await signInWithEmailAndPassword(auth, email, password);
       toast.success("Амжилттай нэвтэрлээ!");
       router.push("/section");
-      // router.push('/') гэх мэт дараагийн хуудас руу залах
     } catch (error) {
       toast.error(error.message || "Нэвтрэхэд алдаа гарлаа");
     }
@@ -63,109 +64,102 @@ const Login = () => {
   };
 
   return (
-    <section className="bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center">
-      <div className="w-full bg-white rounded-lg shadow dark:border sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
-        <div className="p-6 space-y-6 sm:p-8">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white text-center">
-            Нэвтрэх хэсэг
-          </h1>
-
-          <form className="space-y-4" onSubmit={handleLogin}>
-            <div>
-              <label
-                htmlFor="email"
-                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-              >
-                И-Мейл
-              </label>
-              <input
-                type="email"
-                name="email"
-                id="email"
-                className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-600 focus:border-blue-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-                placeholder="name@mail.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-              >
-                Нууц үг
-              </label>
-              <input
-                type="password"
-                name="password"
-                id="password"
-                placeholder="••••••••"
-                className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-600 focus:border-blue-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-300">
-                <input
-                  id="remember"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 dark:bg-gray-700 dark:border-gray-600"
-                />
-
-                <span>Сануулах</span>
-              </label>
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
-              >
-                Нууц үгээ мартсан?
-              </button>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm px-5 py-2.5 text-center"
-            >
-              Нэвтрэх
-            </button>
-
-            <div className="relative text-center">
-              <span className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 z-10 relative">
-                Эсвэл
-              </span>
-              <div className="absolute left-0 top-1/2 w-full h-px bg-gray-300 dark:bg-gray-600 -translate-y-1/2"></div>
-            </div>
-
-            <div className="flex space-x-4">
-              <button
-                type="button"
-                className="w-full flex items-center dark:text-black dark:bg-white justify-center bg-gray-200 hover:bg-gray-300 text-black font-medium rounded-lg text-sm px-5 py-2.5"
-                onClick={handleGoogleLogin}
-              >
-                <FaGoogle className="mr-2" />
-                Google
-              </button>
-            </div>
-          </form>
-
-          <p className="text-sm font-light text-gray-500 dark:text-gray-400 text-center">
-            Бүртгэлгүй юу?
-            <Link
-              href="/login/register"
-              className="ml-1 font-medium text-blue-600 hover:underline dark:text-blue-400"
-            >
-              Бүртгүүлэх
-            </Link>
-          </p>
+    <section className="bg-gray-100  min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-white border border-gray-200 shadow-lg rounded-xl p-8 space-y-6">
+        <div className="flex justify-center">
+          <LuStore className="h-12 w-12 text-primary" />
         </div>
+        <h2 className="text-2xl font-bold text-center text-gray-900">
+          Нэвтрэх хэсэг
+        </h2>
+
+        <form className="space-y-5" onSubmit={handleLogin}>
+          <div>
+            <label
+              htmlFor="email"
+              className="block mb-1 text-sm font-medium text-gray-700"
+            >
+              И-Мейл
+            </label>
+            <input
+              type="email"
+              id="email"
+              className="block w-full rounded-lg border border-gray-300 p-2.5 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="name@email.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="password"
+              className="block mb-1 text-sm font-medium text-gray-700"
+            >
+              Нууц үг
+            </label>
+            <input
+              type="password"
+              id="password"
+              className="block w-full rounded-lg border border-gray-300 p-2.5 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="••••••••"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+              />
+              <span>Сануулах</span>
+            </label>
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-gray-700 hover:underline"
+            >
+              Нууц үгээ мартсан?
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-gray-800 text-white py-2.5 rounded-lg hover:bg-gray-900 transition font-semibold"
+          >
+            Нэвтрэх
+          </button>
+        </form>
+
+        <div className="flex items-center justify-between">
+          <div className="h-px bg-gray-300 w-full"></div>
+          <span className="px-2 text-sm text-gray-400">эсвэл</span>
+          <div className="h-px bg-gray-300 w-full"></div>
+        </div>
+
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-300 py-2.5 rounded-lg font-medium transition"
+        >
+          <FaGoogle className="text-lg" />
+          Google-р нэвтрэх
+        </button>
+
+        <p className="text-center text-sm text-gray-600">
+          Бүртгэлгүй юу?
+          <Link
+            href="/login/register"
+            className="ml-1 text-gray-700 hover:underline font-bold"
+          >
+            Бүртгүүлэх
+          </Link>
+        </p>
       </div>
     </section>
   );

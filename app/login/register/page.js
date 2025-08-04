@@ -1,11 +1,11 @@
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "../../Firebase/config";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import React from "react";
 import { FaGoogle, FaFacebookF } from "react-icons/fa";
+import { LuStore } from "react-icons/lu";
 
 const Register = () => {
   const router = useRouter();
@@ -21,9 +21,7 @@ const Register = () => {
         email,
         password
       );
-      await updateProfile(userCredential.user, {
-        displayName: userName,
-      });
+      await updateProfile(userCredential.user, { displayName: userName });
       toast.success("Амжилттай бүртгэгдлээ!");
       router.push("/login");
     } catch (error) {
@@ -34,32 +32,30 @@ const Register = () => {
       }
     }
   };
-  return (
-    <section className="bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center px-4">
-      <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-md max-w-md p-6 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center">
-          Бүртгүүлэх
-        </h1>
 
-        <div className="flex gap-4 justify-center">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full justify-center">
+  return (
+    <section className="bg-gray-100 min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-white border border-gray-200 shadow-lg rounded-xl p-8 space-y-6">
+        <div className="flex justify-center">
+          <LuStore className="h-12 w-12 text-primary" />
+        </div>
+        <h3 className="text-2xl font-bold text-center text-gray-900">
+          Бүртгүүлэх
+        </h3>
+
+        <div className="flex gap-4">
+          <button className="flex items-center justify-center gap-2 w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 transition">
             <FaGoogle />
             Google
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full justify-center">
-            <FaFacebookF />
-            Facebook
           </button>
         </div>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+            <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-white dark:bg-gray-800 px-2 text-gray-500 dark:text-gray-400">
-              эсвэл
-            </span>
+            <span className="bg-white px-2 text-gray-500">эсвэл</span>
           </div>
         </div>
 
@@ -67,14 +63,14 @@ const Register = () => {
           <div>
             <label
               htmlFor="userName"
-              className="block mb-1 text-sm font-medium text-gray-700 dark:text-white"
+              className="block mb-1 text-sm font-medium text-gray-700"
             >
               Нэр
             </label>
             <input
               type="text"
               id="userName"
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full p-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Нэвтрэх нэр"
               required
               value={userName}
@@ -85,14 +81,14 @@ const Register = () => {
           <div>
             <label
               htmlFor="email"
-              className="block mb-1 text-sm font-medium text-gray-700 dark:text-white"
+              className="block mb-1 text-sm font-medium text-gray-700"
             >
               И-Мэйл
             </label>
             <input
               type="email"
               id="email"
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full p-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
               placeholder="name@example.com"
               required
               value={email}
@@ -103,14 +99,14 @@ const Register = () => {
           <div>
             <label
               htmlFor="password"
-              className="block mb-1 text-sm font-medium text-gray-700 dark:text-white"
+              className="block mb-1 text-sm font-medium text-gray-700"
             >
               Нууц үг
             </label>
             <input
               type="password"
               id="password"
-              className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full p-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
               placeholder="••••••••"
               required
               value={password}
@@ -120,17 +116,17 @@ const Register = () => {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition"
+            className="w-full bg-gray-800 hover:bg-gray-900 text-white font-semibold py-2.5 rounded-lg transition"
           >
             Бүртгүүлэх
           </button>
         </form>
 
-        <p className="text-sm text-center text-gray-500 dark:text-gray-400">
-          Та бүртгэлтэй юу?{" "}
+        <p className="text-sm text-center text-gray-600">
+          Та бүртгэлтэй юу?
           <a
             href="/login"
-            className="text-blue-600 hover:underline dark:text-blue-400"
+            className="text-gray-800 hover:underline ml-1 font-bold"
           >
             Нэвтрэх
           </a>
