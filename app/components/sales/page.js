@@ -1,70 +1,201 @@
 import { useState, useEffect } from "react";
-import { analyticsService } from "@/lib/firebaseService";
+import { salesService, inventoryService } from "../../Firebase/firebaseService";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
+} from "../ui/card";
+import { Badge } from "../ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { Badge } from "./ui/badge";
+} from "../ui/select";
+import { Separator } from "../ui/separator";
 import {
-  BarChart3,
-  TrendingUp,
-  DollarSign,
   ShoppingCart,
-  Package,
-  Calendar,
+  Plus,
+  Minus,
+  Trash2,
+  CreditCard,
+  DollarSign,
+  Search,
+  Receipt,
 } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-export default function Reports() {
-  const [timePeriod, setTimePeriod] = useState("30");
-  const [salesData, setSalesData] = useState(null);
-  const [inventoryData, setInventoryData] = useState(null);
+export default function Sales({ onSaleCompleted }) {
+  const [currentSale, setCurrentSale] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [customerName, setCustomerName] = useState("");
+  const [recentSales, setRecentSales] = useState([]);
+  const [availableItems, setAvailableItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadAnalytics();
-  }, [timePeriod]);
+    loadData();
+  }, []);
 
-  const loadAnalytics = async () => {
-    setLoading(true);
+  const loadData = async () => {
     try {
-      const [sales, inventory] = await Promise.all([
-        analyticsService.getSalesAnalytics(parseInt(timePeriod)),
-        analyticsService.getInventoryAnalytics(),
+      const [items, sales] = await Promise.all([
+        inventoryService.getItems(),
+        salesService.getSales(10),
       ]);
-      setSalesData(sales);
-      setInventoryData(inventory);
+      setAvailableItems(items);
+      setRecentSales(sales);
     } catch (error) {
-      console.error("Error loading analytics:", error);
+      console.error("Error loading data:", error);
+      toast.error("Failed to load data");
     } finally {
       setLoading(false);
     }
   };
 
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
+  const filteredItems = availableItems.filter((item) =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const addToSale = (item) => {
+    const existingItem = currentSale.find(
+      (saleItem) => saleItem.id === item.id
+    );
+
+    if (existingItem) {
+      if (item.type === "product" && existingItem.quantity >= item.quantity) {
+        toast.error("Not enough stock available");
+        return;
+      }
+
+      setCurrentSale((prev) =>
+        prev.map((saleItem) =>
+          saleItem.id === item.id
+            ? {
+                ...saleItem,
+                quantity: saleItem.quantity + 1,
+                total: (saleItem.quantity + 1) * saleItem.price,
+              }
+            : saleItem
+        )
+      );
+    } else {
+      if (item.type === "product" && item.quantity <= 0) {
+        toast.error("Item out of stock");
+        return;
+      }
+
+      setCurrentSale((prev) => [
+        ...prev,
+        {
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: 1,
+          total: item.price,
+          type: item.type,
+        },
+      ]);
+    }
+  };
+
+  const updateQuantity = (itemId, newQuantity) => {
+    if (newQuantity <= 0) {
+      removeFromSale(itemId);
+      return;
+    }
+
+    const item = availableItems.find((i) => i.id === itemId);
+    if (item && item.type === "product" && newQuantity > item.quantity) {
+      toast.error("Not enough stock available");
+      return;
+    }
+
+    setCurrentSale((prev) =>
+      prev.map((saleItem) =>
+        saleItem.id === itemId
+          ? {
+              ...saleItem,
+              quantity: newQuantity,
+              total: newQuantity * saleItem.price,
+            }
+          : saleItem
+      )
+    );
+  };
+
+  const removeFromSale = (itemId) => {
+    setCurrentSale((prev) => prev.filter((item) => item.id !== itemId));
+  };
+
+  const calculateTotals = () => {
+    const subtotal = currentSale.reduce((sum, item) => sum + item.total, 0);
+    const tax = subtotal * 0.08; // 8% tax rate
+    const total = subtotal + tax;
+
+    return { subtotal, tax, total };
+  };
+
+  const processSale = async () => {
+    if (currentSale.length === 0) {
+      toast.error("Please add items to the sale");
+      return;
+    }
+
+    const { subtotal, tax, total } = calculateTotals();
+
+    try {
+      const newSale = {
+        items: [...currentSale],
+        subtotal,
+        tax,
+        total,
+        paymentMethod,
+        customerName: customerName || undefined,
+        timestamp: new Date(),
+      };
+
+      const createdSale = await salesService.addSale(newSale);
+
+      // Update inventory quantities for products
+      for (const saleItem of currentSale) {
+        const inventoryItem = availableItems.find(
+          (item) => item.id === saleItem.id
+        );
+        if (inventoryItem && inventoryItem.type === "product") {
+          const newQuantity = inventoryItem.quantity - saleItem.quantity;
+          await inventoryService.updateQuantity(saleItem.id, newQuantity);
+        }
+      }
+
+      setRecentSales((prev) => [createdSale, ...prev.slice(0, 9)]);
+
+      // Trigger notification callback
+      onSaleCompleted?.(createdSale);
+
+      setCurrentSale([]);
+      setCustomerName("");
+
+      // Reload available items to reflect updated quantities
+      const updatedItems = await inventoryService.getItems();
+      setAvailableItems(updatedItems);
+
+      toast.success(`Sale completed! Total: $${total.toFixed(2)}`);
+    } catch (error) {
+      console.error("Error processing sale:", error);
+      toast.error("Failed to process sale");
+    }
+  };
+
+  const { subtotal, tax, total } = calculateTotals();
 
   if (loading) {
     return (
@@ -76,245 +207,243 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2>Reports & Analytics</h2>
-          <p className="text-muted-foreground">
-            Track your store's performance and insights
-          </p>
+      <div>
+        <h2>Борлуулалтын хэсэг</h2>
+        <p className="text-muted-foreground">
+          Борлуулалт болон гүйлгээний мэдээллүүд
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Product Selection */}
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Сонгох бараа</CardTitle>
+              <CardDescription>
+                Одоогийн борлуулалтанд тохируулан бараагаа хайх
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Бараа хайх..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                  {filteredItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
+                      onClick={() => addToSale(item)}
+                    >
+                      <div>
+                        <p className="text-sm">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          ₮{item.price} •{" "}
+                          {item.type === "product"
+                            ? `${item.quantity} үлдэгдэлтэй`
+                            : "Service"}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Sales */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Сүүлийн борлуулалтууд</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentSales.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">
+                  Борлуулалт алга
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {recentSales.map((sale) => (
+                    <div
+                      key={sale.id}
+                      className="flex items-center justify-between p-2 border rounded"
+                    >
+                      <div>
+                        <p className="text-sm">
+                          {sale.items.length} бараа
+                          {sale.items.length !== 1 ? "s" : ""}
+                          {sale.customerName && ` - ${sale.customerName}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {sale.timestamp?.toDate
+                            ? sale.timestamp.toDate().toLocaleTimeString()
+                            : new Date(sale.timestamp).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm">${sale.total.toFixed(2)}</p>
+                        <Badge variant="outline" className="text-xs">
+                          {sale.paymentMethod}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-        <Select value={timePeriod} onValueChange={setTimePeriod}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">Last 7 days</SelectItem>
-            <SelectItem value="30">Last 30 days</SelectItem>
-            <SelectItem value="90">Last 90 days</SelectItem>
-            <SelectItem value="365">Last year</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl">
-              ${salesData?.totalRevenue?.toFixed(2) || "0.00"}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Last {timePeriod} days
-            </p>
-          </CardContent>
-        </Card>
+        {/* Current Sale */}
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <ShoppingCart className="h-5 w-5" />
+                <span>Одоогийн борлуулалт</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {currentSale.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  Сонгосон бараа алга
+                </p>
+              ) : (
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {currentSale.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between space-x-2"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          ₮{item.price} ширхэгээр
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity - 1)
+                          }
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-8 text-center text-sm">
+                          {item.quantity}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity + 1)
+                          }
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => removeFromSale(item.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">Total Transactions</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl">{salesData?.totalTransactions || 0}</div>
-            <p className="text-xs text-muted-foreground">Sales completed</p>
-          </CardContent>
-        </Card>
+              <Separator />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">Average Order Value</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl">
-              ${salesData?.averageOrderValue?.toFixed(2) || "0.00"}
-            </div>
-            <p className="text-xs text-muted-foreground">Per transaction</p>
-          </CardContent>
-        </Card>
+              {/* Totals */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Дүн:</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Tax (8%):</span>
+                  <span>${tax.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-lg">
+                  <span>Нийт дүн:</span>
+                  <span>${total.toFixed(2)}</span>
+                </div>
+              </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">Total Inventory Value</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl">
-              ${inventoryData?.totalValue?.toFixed(2) || "0.00"}
-            </div>
-            <p className="text-xs text-muted-foreground">Current stock value</p>
-          </CardContent>
-        </Card>
-      </div>
+              <Separator />
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales Over Time */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Sales Over Time</CardTitle>
-            <CardDescription>
-              Daily revenue for the selected period
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesData?.dailySales || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip
-                  formatter={(value) => [`$${value.toFixed(2)}`, "Revenue"]}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#8884d8"
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+              {/* Customer & Payment */}
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="customer">Харилцагчийн нэр (Сонголтот)</Label>
+                  <Input
+                    id="customer"
+                    placeholder="Харилцагчийн нэр оруулах"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                  />
+                </div>
 
-        {/* Inventory by Category */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Inventory by Category</CardTitle>
-            <CardDescription>
-              Value distribution across categories
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={inventoryData?.categoryBreakdown || []}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ category, percent }) =>
-                    `${category} ${(percent * 100).toFixed(0)}%`
-                  }
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
+                <div className="space-y-2">
+                  <Label htmlFor="payment">Төлбөрийн төрөл</Label>
+                  <Select
+                    value={paymentMethod}
+                    onValueChange={setPaymentMethod}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">
+                        <div className="flex items-center space-x-2">
+                          <DollarSign className="h-4 w-4" />
+                          <span>Бэлэн</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="card">
+                        <div className="flex items-center space-x-2">
+                          <CreditCard className="h-4 w-4" />
+                          <span>Карт</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="digital">
+                        <div className="flex items-center space-x-2">
+                          <Receipt className="h-4 w-4" />
+                          <span>Цахим хэтэвч</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button
+                  onClick={processSale}
+                  disabled={currentSale.length === 0}
+                  className="w-full"
                 >
-                  {(inventoryData?.categoryBreakdown || []).map(
-                    (entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    )
-                  )}
-                </Pie>
-                <Tooltip
-                  formatter={(value) => [`$${value.toFixed(2)}`, "Value"]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Inventory Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Low Stock Items</CardTitle>
-            <CardDescription>
-              Items that need restocking ({inventoryData?.lowStockCount || 0}{" "}
-              items)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {inventoryData?.lowStockItems?.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">
-                No low stock items
-              </p>
-            ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {inventoryData?.lowStockItems?.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-2 border rounded"
-                  >
-                    <div>
-                      <p className="text-sm">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.category}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant="secondary">{item.quantity} left</Badge>
-                    </div>
-                  </div>
-                ))}
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Захиалга дуусгах
+                </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Out of Stock Items</CardTitle>
-            <CardDescription>
-              Items that are completely out of stock (
-              {inventoryData?.outOfStockCount || 0} items)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {inventoryData?.outOfStockItems?.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">
-                No out of stock items
-              </p>
-            ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {inventoryData?.outOfStockItems?.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-2 border rounded"
-                  >
-                    <div>
-                      <p className="text-sm">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.category}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant="destructive">Out of Stock</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      {/* Category Performance */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Category Performance</CardTitle>
-          <CardDescription>Items and value by category</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={inventoryData?.categoryBreakdown || []}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="category" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="count" fill="#8884d8" name="Item Count" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
     </div>
   );
 }

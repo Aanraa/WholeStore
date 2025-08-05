@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
-import { analyticsService } from "@/lib/firebaseService";
+import { analyticsService } from "../../Firebase/firebaseService";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
+} from "../ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { Badge } from "./ui/badge";
+} from "../ui/select";
+import { Badge } from "../ui/badge";
 import {
   BarChart3,
   TrendingUp,

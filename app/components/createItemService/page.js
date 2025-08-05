@@ -1,26 +1,27 @@
 import { useState, useEffect } from "react";
-import { inventoryService } from "@/lib/firebaseService";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
+import { inventoryService } from "../../Firebase/firebaseService";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
+} from "../ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { Badge } from "./ui/badge";
+} from "../ui/select";
+import { Badge } from "../ui/badge";
 import { Package, Plus, Check } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function CreateItem({ onItemCreated }) {
   const [formData, setFormData] = useState({
@@ -39,14 +40,12 @@ export default function CreateItem({ onItemCreated }) {
   const [loading, setLoading] = useState(false);
 
   const categories = [
-    "Electronics",
-    "Clothing",
-    "Home & Garden",
-    "Sports",
-    "Books",
-    "Services",
-    "Food & Beverage",
-    "Other",
+    "Дугуй",
+    "Дотоод эд анги",
+    "Гадаад эд анги",
+    "Салон",
+    "Мотор",
+    "Ширхэгийн",
   ];
 
   useEffect(() => {
@@ -126,9 +125,9 @@ export default function CreateItem({ onItemCreated }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2>Create New Item or Service</h2>
+        <h2>Шинэ бараа болон үйлчилгээ үүсгэх</h2>
         <p className="text-muted-foreground">
-          Add products or services to your store inventory
+          Өөрийн барааны нэр төрлийг нэмээрэй
         </p>
       </div>
 
@@ -136,19 +135,19 @@ export default function CreateItem({ onItemCreated }) {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Item Details</CardTitle>
+              <CardTitle>Барааны мэдээлэл</CardTitle>
               <CardDescription>
-                Enter the information for your new item or service
+                Шинэ бараа эсвэл үйлчилгээний мэдээллийг оруулна уу
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Name *</Label>
+                    <Label htmlFor="name">Барааны нэр *</Label>
                     <Input
                       id="name"
-                      placeholder="Enter item name"
+                      placeholder="Барааны нэр оруулна уу"
                       value={formData.name}
                       onChange={(e) =>
                         handleInputChange("name", e.target.value)
@@ -158,7 +157,7 @@ export default function CreateItem({ onItemCreated }) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="type">Type *</Label>
+                    <Label htmlFor="type">Төрөл *</Label>
                     <Select
                       value={formData.type}
                       onValueChange={(value) =>
@@ -166,12 +165,12 @@ export default function CreateItem({ onItemCreated }) {
                       }
                       disabled={loading}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-gray-100">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="product">Product</SelectItem>
-                        <SelectItem value="service">Service</SelectItem>
+                        <SelectItem value="product">Бүтээгдэхүүн</SelectItem>
+                        <SelectItem value="service">Үйлчилгээ</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -179,7 +178,7 @@ export default function CreateItem({ onItemCreated }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category *</Label>
+                    <Label htmlFor="category">Барааны төрөл *</Label>
                     <Select
                       value={formData.category}
                       onValueChange={(value) =>
@@ -188,7 +187,7 @@ export default function CreateItem({ onItemCreated }) {
                       disabled={loading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder="Төрөл сонгоно уу" />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((category) => (
@@ -201,7 +200,7 @@ export default function CreateItem({ onItemCreated }) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="sku">SKU</Label>
+                    <Label htmlFor="sku">Тоо ширхэг</Label>
                     <Input
                       id="sku"
                       placeholder="Auto-generated if empty"
@@ -214,7 +213,7 @@ export default function CreateItem({ onItemCreated }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Selling Price *</Label>
+                    <Label htmlFor="price">Зарах үнэ *</Label>
                     <Input
                       id="price"
                       type="number"
@@ -229,7 +228,7 @@ export default function CreateItem({ onItemCreated }) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cost">Cost Price</Label>
+                    <Label htmlFor="cost">Татсан үнэ</Label>
                     <Input
                       id="cost"
                       type="number"
@@ -246,7 +245,7 @@ export default function CreateItem({ onItemCreated }) {
                   {formData.type === "product" && (
                     <>
                       <div className="space-y-2">
-                        <Label htmlFor="quantity">Initial Quantity</Label>
+                        <Label htmlFor="quantity">Барааны тоо ширхэг</Label>
                         <Input
                           id="quantity"
                           type="number"
@@ -260,7 +259,7 @@ export default function CreateItem({ onItemCreated }) {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="lowStockThreshold">
-                          Low Stock Alert
+                          Сануулга харуулах үлдэгдэл
                         </Label>
                         <Input
                           id="lowStockThreshold"
@@ -281,10 +280,11 @@ export default function CreateItem({ onItemCreated }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Тайлбар</Label>
                   <Textarea
+                    className="bg-gray-100"
                     id="description"
-                    placeholder="Enter item description"
+                    placeholder="Тайлбар оруулна уу"
                     value={formData.description}
                     onChange={(e) =>
                       handleInputChange("description", e.target.value)
@@ -293,7 +293,11 @@ export default function CreateItem({ onItemCreated }) {
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button
+                  type="submit"
+                  className="w-full bg-gray-800 hover:bg-gray-900"
+                  disabled={loading}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   {loading
                     ? "Creating..."
@@ -309,13 +313,15 @@ export default function CreateItem({ onItemCreated }) {
         <div>
           <Card>
             <CardHeader>
-              <CardTitle>Recently Created</CardTitle>
-              <CardDescription>Your latest items and services</CardDescription>
+              <CardTitle>Сүүлд нэмэгдсэн</CardTitle>
+              <CardDescription>
+                Таны сүүлд нэмсэн бараа болон үйлчилгээ
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {recentItems.length === 0 ? (
                 <p className="text-muted-foreground text-center py-4">
-                  No items created yet
+                  Бараа үйлчилгээ алга
                 </p>
               ) : (
                 recentItems.map((item) => (
@@ -330,13 +336,13 @@ export default function CreateItem({ onItemCreated }) {
                       <div className="flex items-center space-x-2">
                         <p className="text-sm truncate">{item.name}</p>
                         <Badge variant="outline" className="text-xs">
-                          {item.type}
+                          {item.type == "service" ? "Үйлчилгээ" : "Бараа"}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {item.category}
                       </p>
-                      <p className="text-sm">${item.price}</p>
+                      <p className="text-sm">₮{item.price}</p>
                     </div>
                     <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                   </div>

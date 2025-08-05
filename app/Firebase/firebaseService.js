@@ -9,8 +9,9 @@ import {
   where,
   orderBy,
   onSnapshot,
+  limit,
 } from "firebase/firestore";
-import { db, auth } from "./firebase";
+import { db, auth } from "../Firebase/config";
 
 // Helper function to get user-specific collection reference
 const getUserCollection = (collectionName) => {
@@ -101,6 +102,152 @@ export const inventoryService = {
   },
 };
 
+export const ordersService = {
+  // Add new order
+  async addOrder(order) {
+    try {
+      const ordersRef = getUserCollection("orders");
+      const docRef = await addDoc(ordersRef, {
+        ...order,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      return { id: docRef.id, ...order };
+    } catch (error) {
+      console.error("Error adding order:", error);
+      throw error;
+    }
+  },
+
+  // Get all orders
+  async getOrders(limitCount = 100) {
+    try {
+      const ordersRef = getUserCollection("orders");
+      const querySnapshot = await getDocs(
+        query(ordersRef, orderBy("createdAt", "desc"), limit(limitCount))
+      );
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error) {
+      console.error("Error getting orders:", error);
+      throw error;
+    }
+  },
+
+  // Get orders by status
+  async getOrdersByStatus(status) {
+    try {
+      const ordersRef = getUserCollection("orders");
+      const querySnapshot = await getDocs(
+        query(
+          ordersRef,
+          where("status", "==", status),
+          orderBy("createdAt", "desc")
+        )
+      );
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error) {
+      console.error("Error getting orders by status:", error);
+      throw error;
+    }
+  },
+
+  // Update order status
+  async updateOrderStatus(orderId, status) {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) throw new Error("User not authenticated");
+
+      const orderRef = doc(db, "users", userId, "orders", orderId);
+      await updateDoc(orderRef, {
+        status,
+        updatedAt: new Date(),
+      });
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      throw error;
+    }
+  },
+
+  // Update order details
+  async updateOrder(orderId, updates) {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) throw new Error("User not authenticated");
+
+      const orderRef = doc(db, "users", userId, "orders", orderId);
+      await updateDoc(orderRef, {
+        ...updates,
+        updatedAt: new Date(),
+      });
+    } catch (error) {
+      console.error("Error updating order:", error);
+      throw error;
+    }
+  },
+
+  // Delete order
+  async deleteOrder(orderId) {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) throw new Error("User not authenticated");
+
+      const orderRef = doc(db, "users", userId, "orders", orderId);
+      await deleteDoc(orderRef);
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      throw error;
+    }
+  },
+
+  // Get orders by date range
+  async getOrdersByDateRange(startDate, endDate) {
+    try {
+      const ordersRef = getUserCollection("orders");
+      const querySnapshot = await getDocs(
+        query(
+          ordersRef,
+          where("createdAt", ">=", startDate),
+          where("createdAt", "<=", endDate),
+          orderBy("createdAt", "desc")
+        )
+      );
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error) {
+      console.error("Error getting orders by date range:", error);
+      throw error;
+    }
+  },
+
+  // Listen to orders changes
+  onOrdersChange(callback) {
+    try {
+      const ordersRef = getUserCollection("orders");
+      return onSnapshot(
+        query(ordersRef, orderBy("createdAt", "desc")),
+        (snapshot) => {
+          const orders = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          callback(orders);
+        }
+      );
+    } catch (error) {
+      console.error("Error setting up orders listener:", error);
+      throw error;
+    }
+  },
+};
+
 // Sales functions
 export const salesService = {
   // Add new sale
@@ -119,11 +266,11 @@ export const salesService = {
   },
 
   // Get all sales
-  async getSales(limit = 50) {
+  async getSales(limitCount = 50) {
     try {
       const salesRef = getUserCollection("sales");
       const querySnapshot = await getDocs(
-        query(salesRef, orderBy("createdAt", "desc"), limit)
+        query(salesRef, orderBy("createdAt", "desc"), limit(limitCount))
       );
       return querySnapshot.docs.map((doc) => ({
         id: doc.id,

@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { inventoryService } from "@/lib/firebaseService";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { inventoryService } from "../../Firebase/firebaseService";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
+} from "../ui/card";
 import {
   Table,
   TableBody,
@@ -17,8 +17,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "./ui/table";
-import { Badge } from "./ui/badge";
+} from "../ui/table";
+import { Badge } from "../ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -27,14 +27,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "./ui/dialog";
+} from "../ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "../ui/select";
+
 import {
   Package,
   Plus,
@@ -43,7 +44,8 @@ import {
   Search,
   Filter,
 } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Inventory({ onStockUpdate }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -142,12 +144,12 @@ export default function Inventory({ onStockUpdate }) {
 
   const getStockStatus = (item) => {
     if (item.type === "service")
-      return { label: "Service", variant: "secondary" };
+      return { label: "Үйлчилгээ", variant: "secondary" };
     if (item.quantity === 0)
-      return { label: "Out of Stock", variant: "destructive" };
+      return { label: "Үлдэгдэлгүй болсон", variant: "destructive" };
     if (item.quantity <= (item.lowStockThreshold || 5))
-      return { label: "Low Stock", variant: "secondary" };
-    return { label: "In Stock", variant: "default" };
+      return { label: "Үлдэгдэл дуусжина", variant: "secondary" };
+    return { label: "Үлдэгдэл байна", variant: "default" };
   };
 
   const resetFilters = () => {
@@ -167,22 +169,22 @@ export default function Inventory({ onStockUpdate }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2>Inventory Management</h2>
+        <h2>Бараа хяналт</h2>
         <p className="text-muted-foreground">
-          View and manage your store's inventory levels
+          Барааны мэдээллээ шүүж цагаа хэмнээрэй
         </p>
       </div>
 
       {/* Low Stock Alert */}
       {lowStockItems.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
+        <Card className="border-amber-200 bg-yellow-100 dark:border-amber-800 dark:bg-yellow-100">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <AlertTriangle className="h-5 w-5 text-amber-600" />
               <span>Low Stock Alert</span>
             </CardTitle>
             <CardDescription>
-              {lowStockItems.length} item(s) need attention
+              {lowStockItems.length} бараанд анхаарал хэрэгтэй байна!
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -193,10 +195,10 @@ export default function Inventory({ onStockUpdate }) {
                   className="flex items-center justify-between p-2 bg-background rounded"
                 >
                   <span>
-                    {item.name} - Only {item.quantity} left
+                    {item.name} - {item.quantity} ширхэг үлдсэн байна
                   </span>
                   <Button size="sm" variant="outline">
-                    Restock
+                    Дахин захиалах
                   </Button>
                 </div>
               ))}
@@ -208,17 +210,17 @@ export default function Inventory({ onStockUpdate }) {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>Шүүлтүүр</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
+              <Label htmlFor="search">Хайх</Label>
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="search"
-                  placeholder="Search items or SKU..."
+                  placeholder="Барааны нэр болон SKU..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-8"
@@ -227,13 +229,13 @@ export default function Inventory({ onStockUpdate }) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">Ангилал</Label>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All categories" />
+                  <SelectValue placeholder="Бүх ангилал" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="all">Бүх ангилал</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -244,15 +246,15 @@ export default function Inventory({ onStockUpdate }) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
+              <Label htmlFor="type">Төрөл</Label>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All types" />
+                  <SelectValue placeholder="Бүх төрөл" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="product">Products</SelectItem>
-                  <SelectItem value="service">Services</SelectItem>
+                  <SelectItem value="all">Бүх төрөл</SelectItem>
+                  <SelectItem value="product">Бараа</SelectItem>
+                  <SelectItem value="service">Үйлчилгээ</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -264,7 +266,7 @@ export default function Inventory({ onStockUpdate }) {
                 onClick={resetFilters}
               >
                 <Filter className="mr-2 h-4 w-4" />
-                Reset Filters
+                Шүүлтүүр сэргээх
               </Button>
             </div>
           </div>
@@ -274,20 +276,20 @@ export default function Inventory({ onStockUpdate }) {
       {/* Inventory Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Inventory Items ({filteredInventory.length})</CardTitle>
+          <CardTitle>Бүртгэгдсэн бараа ({filteredInventory.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Item</TableHead>
+                <TableHead>Бараа</TableHead>
                 <TableHead>SKU</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Ангилал</TableHead>
+                <TableHead>Төрөл</TableHead>
+                <TableHead>Үнэ</TableHead>
+                <TableHead>Тоо хэмжээ</TableHead>
+                <TableHead>Төлөв</TableHead>
+                <TableHead>Үйлдэл</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -301,7 +303,9 @@ export default function Inventory({ onStockUpdate }) {
                     </TableCell>
                     <TableCell>{item.category}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{item.type}</Badge>
+                      <Badge variant="outline">
+                        {item.type == "service" ? "Үйлчилгээ" : "Бүтээгдэхүүн"}
+                      </Badge>
                     </TableCell>
                     <TableCell>${item.price}</TableCell>
                     <TableCell>
@@ -322,27 +326,28 @@ export default function Inventory({ onStockUpdate }) {
                               onClick={() => setSelectedItem(item)}
                             >
                               <Package className="mr-1 h-3 w-3" />
-                              Adjust
+                              Тохируулах
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Adjust Quantity</DialogTitle>
+                              <DialogTitle>Тоо хэмжээ засах</DialogTitle>
                               <DialogDescription>
-                                Modify the stock level for {selectedItem?.name}
+                                Та энэхүү барааны нэршлийн хувьд засна :{" "}
+                                {selectedItem?.name}
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4">
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                  <Label>Current Quantity</Label>
+                                  <Label>Одоогийн үлдэгдэл</Label>
                                   <div className="text-2xl">
                                     {selectedItem?.quantity || 0}
                                   </div>
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="adjustment-type">
-                                    Action
+                                    Үйлдэл
                                   </Label>
                                   <Select
                                     value={adjustmentType}
@@ -352,22 +357,20 @@ export default function Inventory({ onStockUpdate }) {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="add">
-                                        Add Stock
-                                      </SelectItem>
+                                      <SelectItem value="add">Нэмэх</SelectItem>
                                       <SelectItem value="remove">
-                                        Remove Stock
+                                        Хасах
                                       </SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor="quantity">Quantity</Label>
+                                <Label htmlFor="quantity">Тоо ширхэг</Label>
                                 <Input
                                   id="quantity"
                                   type="number"
-                                  placeholder="Enter quantity"
+                                  placeholder="Тоо оруулна уу"
                                   value={quantityAdjustment}
                                   onChange={(e) =>
                                     setQuantityAdjustment(e.target.value)
@@ -376,15 +379,18 @@ export default function Inventory({ onStockUpdate }) {
                               </div>
                             </div>
                             <DialogFooter>
-                              <Button onClick={handleQuantityAdjustment}>
+                              <Button
+                                className="bg-gray-800 hover:bg-gray-900"
+                                onClick={handleQuantityAdjustment}
+                              >
                                 {adjustmentType === "add" ? (
                                   <Plus className="mr-2 h-4 w-4" />
                                 ) : (
                                   <Minus className="mr-2 h-4 w-4" />
                                 )}
                                 {adjustmentType === "add"
-                                  ? "Add Stock"
-                                  : "Remove Stock"}
+                                  ? "Тоо нэмэх"
+                                  : "Тоо хасах"}
                               </Button>
                             </DialogFooter>
                           </DialogContent>

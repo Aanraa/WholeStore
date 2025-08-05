@@ -1,44 +1,7 @@
 import { useState, useEffect } from "react";
 
 export function useNotifications(inventoryData) {
-  const [notifications, setNotifications] = useState([
-    {
-      id: "1",
-      type: "warning",
-      title: "Low Stock Alert",
-      message: "Samsung Galaxy S21 has only 3 units left",
-      timestamp: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
-      read: false,
-      actionable: true,
-    },
-    {
-      id: "2",
-      type: "warning",
-      title: "Low Stock Alert",
-      message: "Cotton T-Shirt has only 2 units left",
-      timestamp: new Date(Date.now() - 25 * 60 * 1000), // 25 minutes ago
-      read: false,
-      actionable: true,
-    },
-    {
-      id: "3",
-      type: "info",
-      title: "Daily Sales Report",
-      message: "Today's sales: $3,246 (+12% from yesterday)",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      read: true,
-      actionable: false,
-    },
-    {
-      id: "4",
-      type: "success",
-      title: "Item Added",
-      message: "iPhone 13 has been successfully added to inventory",
-      timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-      read: true,
-      actionable: false,
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   // Generate notifications based on inventory data
   useEffect(() => {

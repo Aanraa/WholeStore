@@ -7,9 +7,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Separator } from "./ui/separator";
+} from "../components/ui/card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../components/ui/popover";
+import { Separator } from "../components/ui/separator";
 import {
   Bell,
   AlertTriangle,

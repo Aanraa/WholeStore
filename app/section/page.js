@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../Firebase/config";
+import { Button } from "../components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Badge } from "./ui/badge";
+} from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 import {
   Store,
   Package,
@@ -20,18 +21,25 @@ import {
   TrendingUp,
   LogOut,
   Settings,
+  FileText,
 } from "lucide-react";
-import CreateItem from "../components/createItemService";
-import Inventory from "../components/inventory";
-import Sales from "../components/sales";
-import Reports from "../components/report";
-import Orders from "../components/orders";
+import CreateItem from "../components/createItemService/page";
+import Inventory from "../components/inventory/page";
+import Sales from "../components/sales/page";
+import Reports from "../components/report/page";
+import Orders from "../components/orders/page";
 import Notifications from "../components/Notification";
 import { useNotifications } from "../components/useNotification";
-import { toast } from "sonner@2.0.3";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Dashboard({ user }) {
+  console.log(user, "user bnnn");
+  console.log(user?.displayName, "Display Name");
+
   const [currentView, setCurrentView] = useState("overview");
+  const router = useRouter();
 
   const {
     notifications,
@@ -42,17 +50,18 @@ export default function Dashboard({ user }) {
   } = useNotifications();
 
   const navigationItems = [
-    { id: "overview", label: "Overview", icon: Store },
-    { id: "create", label: "Create Item", icon: Plus },
-    { id: "inventory", label: "Inventory", icon: Package },
-    { id: "sales", label: "Sales", icon: ShoppingCart },
-    { id: "reports", label: "Reports", icon: BarChart3 },
-    { id: "orders", label: "Orders", icon: BarChart3 },
+    { id: "overview", label: "Төлөв", icon: Store },
+    { id: "create", label: "Шинээр үүсгэх", icon: Plus },
+    { id: "inventory", label: "Үлдэгдэл мэдээлэл", icon: Package },
+    { id: "orders", label: "Захиалга", icon: FileText },
+    { id: "sales", label: "Борлуулалт", icon: ShoppingCart },
+    { id: "reports", label: "Тайлан", icon: BarChart3 },
   ];
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      router.push("/");
       toast.success("Signed out successfully");
     } catch (error) {
       console.error("Logout error:", error);
@@ -98,27 +107,7 @@ export default function Dashboard({ user }) {
           />
         );
       case "orders":
-        return (
-          <Orders
-            onStockUpdate={(item, oldQuantity, newQuantity) => {
-              if (newQuantity <= item.lowStockThreshold && newQuantity > 0) {
-                addNotification({
-                  type: "warning",
-                  title: "Low Stock Alert",
-                  message: `${item.name} now has only ${newQuantity} units left`,
-                  read: false,
-                });
-              } else if (newQuantity === 0) {
-                addNotification({
-                  type: "error",
-                  title: "Out of Stock",
-                  message: `${item.name} is now out of stock`,
-                  read: false,
-                });
-              }
-            }}
-          />
-        );
+        return <Orders />;
       case "sales":
         return (
           <Sales
@@ -140,16 +129,16 @@ export default function Dashboard({ user }) {
         return (
           <div className="space-y-6">
             <div>
-              <h2>Welcome back, {user.email}!</h2>
+              <h2>Дахин уулзахад таатай байна, {user?.email}!</h2>
               <p className="text-muted-foreground">
-                Here's what's happening in your store today.
+                Доор өнөөдрийн үйл явдлын тоймыг харуулж байна
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm">Total Items</CardTitle>
+                  <CardTitle className="text-sm">Нийт бараа</CardTitle>
                   <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -162,39 +151,45 @@ export default function Dashboard({ user }) {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm">Today's Sales</CardTitle>
+                  <CardTitle className="text-sm">
+                    Өнөөдрийн борлуулалт
+                  </CardTitle>
                   <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl">$1,234</div>
+                  <div className="text-2xl">₮1,234</div>
                   <p className="text-xs text-muted-foreground">
-                    +18% from yesterday
+                    өчигдрөөс +18% хувь
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm">Low Stock Items</CardTitle>
+                  <CardTitle className="text-sm">
+                    Үлдэгдэл дуусч буй бараа
+                  </CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl">2</div>
                   <p className="text-xs text-muted-foreground">
-                    Requires attention
+                    Анхаарах хэрэгтэй бараа
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm">Monthly Revenue</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm">
+                    Хүлээгдэж буй захиалга
+                  </CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl">$12,470</div>
+                  <div className="text-2xl">8</div>
                   <p className="text-xs text-muted-foreground">
-                    +12% from last month
+                    яаралтай захиалга
                   </p>
                 </CardContent>
               </Card>
@@ -203,9 +198,9 @@ export default function Dashboard({ user }) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
+                  <CardTitle>Хурдан хийх үйлдэл</CardTitle>
                   <CardDescription>
-                    Common tasks to manage your store
+                    Өдөр тутамдаа хийдэг үйлдлүүд
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -215,7 +210,15 @@ export default function Dashboard({ user }) {
                     onClick={() => setCurrentView("create")}
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Create New Item or Service
+                    Шинэ бараа болон үйлчилгээ үүсгэх
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => handleNavigation("orders")}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Шинэ захиалга үүсгэх
                   </Button>
                   <Button
                     variant="outline"
@@ -223,7 +226,7 @@ export default function Dashboard({ user }) {
                     onClick={() => setCurrentView("inventory")}
                   >
                     <Package className="mr-2 h-4 w-4" />
-                    Manage Inventory
+                    Барааны үлдэгдэл хянах
                   </Button>
                   <Button
                     variant="outline"
@@ -231,14 +234,14 @@ export default function Dashboard({ user }) {
                     onClick={() => setCurrentView("sales")}
                   >
                     <ShoppingCart className="mr-2 h-4 w-4" />
-                    Process Sale
+                    Борлуулалт харах
                   </Button>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
+                  <CardTitle>Саяхны түүх</CardTitle>
                   <CardDescription>
                     Latest transactions and updates
                   </CardDescription>
@@ -296,18 +299,24 @@ export default function Dashboard({ user }) {
 
       <div className="flex">
         {/* Sidebar */}
+        {/* Sidebar */}
         <aside className="w-64 border-r bg-card min-h-[calc(100vh-4rem)]">
-          <nav className="p-4 space-y-2">
+          <nav className="p-4 space-y-1">
             {navigationItems.map((item) => {
               const Icon = item.icon;
+              const isActive = currentView === item.id;
+
               return (
                 <button
                   key={item.id}
-                  variant={currentView === item.id ? "secondary" : "ghost"}
-                  className="w-full justify-start"
                   onClick={() => setCurrentView(item.id)}
+                  className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-muted text-primary"
+                      : "hover:bg-muted hover:text-primary text-muted-foreground"
+                  }`}
                 >
-                  <Icon className="mr-2 h-4 w-4" />
+                  <Icon className="h-4 w-4 mr-2" />
                   {item.label}
                 </button>
               );
